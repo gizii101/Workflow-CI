@@ -15,7 +15,7 @@ def main():
     # ❗ JANGAN set_tracking_uri DI SINI
     mlflow.set_experiment("Heart_Disease_Classification")
 
-    df = pd.read_csv("heart_preprocessing.csv")
+    df = pd.read_csv("MLProject/heart_preprocessing.csv")
 
     X = df.drop(columns=["HeartDisease"])
     y = df["HeartDisease"]
@@ -77,3 +77,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
