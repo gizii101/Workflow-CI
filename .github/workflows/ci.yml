@@ -31,15 +31,15 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Build & Push Docker Image (CORRECT)
+      - name: Build & Push Docker Image
         run: |
-          echo "Listing mlruns:"
-          ls -R mlruns
+          echo "Listing MLProject/mlruns:"
+          ls -R MLProject/mlruns
 
           # Ambil RUN_ID terbaru
-          RUN_ID=$(ls -td mlruns/0/*/ | head -n 1 | xargs basename)
+          RUN_ID=$(ls -td MLProject/mlruns/0/*/ | head -n 1 | xargs basename)
 
-          MODEL_PATH="mlruns/0/$RUN_ID/artifacts/model"
+          MODEL_PATH="MLProject/mlruns/0/$RUN_ID/artifacts/model"
           IMAGE="${{ secrets.DOCKER_USERNAME }}/heart-disease-ci:latest"
 
           echo "RUN_ID=$RUN_ID"
