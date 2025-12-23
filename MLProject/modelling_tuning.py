@@ -18,6 +18,8 @@ def main():
     mlflow.set_tracking_uri("file:./mlruns")
     mlflow.set_experiment("Heart_Disease_Classification")
 
+    # ❗ JANGAN start_run() — MLflow Project SUDAH BUAT RUN
+
     # =========================================
     # 2. LOAD DATA
     # =========================================
@@ -72,4 +74,37 @@ def main():
     mlflow.log_metric("f1_score", f1)
 
     # =====================================
-    # 5
+    # 5. SAVE MODEL KE FILESYSTEM (WAJIB)
+    # =====================================
+    os.makedirs("random_forest_model", exist_ok=True)
+    joblib.dump(best_model, "random_forest_model/model.pkl")
+
+    # LOG MODEL UNTUK DOCKER
+    mlflow.sklearn.log_model(
+        sk_model=best_model,
+        artifact_path="random_forest_model"
+    )
+
+    # =====================================
+    # 6. EXTRA ARTIFACTS
+    # =====================================
+    with open("performance_report.txt", "w") as f:
+        f.write("=== Heart Disease Classification Report ===\n")
+        f.write(f"Accuracy  : {acc:.4f}\n")
+        f.write(f"Precision : {prec:.4f}\n")
+        f.write(f"Recall    : {rec:.4f}\n")
+        f.write(f"F1-Score  : {f1:.4f}\n")
+        f.write(f"Best Params: {grid_search.best_params_}\n")
+
+    mlflow.log_artifact("performance_report.txt")
+
+    with open("best_config.json", "w") as f:
+        json.dump(grid_search.best_params_, f, indent=4)
+
+    mlflow.log_artifact("best_config.json")
+
+    print("SELESAI. Accuracy:", acc)
+
+
+if __name__ == "__main__":
+    main()
