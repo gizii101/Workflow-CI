@@ -1,9 +1,16 @@
 import pandas as pd
+import joblib
+import os
 import mlflow
 import mlflow.sklearn
+
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
+
+
+os.makedirs("model", exist_ok=True)
+joblib.dump(model, "model/model.pkl")
 
 def main():
     mlflow.set_tracking_uri("file:./mlruns")
