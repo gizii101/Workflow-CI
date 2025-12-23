@@ -12,9 +12,15 @@ from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_sc
 
 def main():
 
+    # ===============================
+    # 1. TRACKING (LOCAL FILESTORE)
+    # ===============================
     mlflow.set_tracking_uri("file:./mlruns")
     mlflow.set_experiment("Heart_Disease_Classification")
 
+    # ===============================
+    # 2. LOAD DATA
+    # ===============================
     df = pd.read_csv("heart_preprocessing.csv")
     X = df.drop(columns=["HeartDisease"])
     y = df["HeartDisease"]
@@ -23,6 +29,9 @@ def main():
         X, y, test_size=0.2, random_state=42, stratify=y
     )
 
+    # ===============================
+    # 3. GRID SEARCH
+    # ===============================
     param_grid = {
         "n_estimators": [100, 200],
         "max_depth": [None, 10, 20],
@@ -35,7 +44,10 @@ def main():
         rf, param_grid, cv=5, scoring="accuracy", n_jobs=-1, verbose=1
     )
 
-    with mlflow.start_run(run_name="RF_HeartDisease_Tuning"):
+    # ===============================
+    # 🔑 IKAT KE RUN MLPROJECT
+    # ===============================
+    with mlflow.start_run(run_id=os.environ["MLFLOW_RUN_ID"]):
 
         print("Training + Hyperparameter Tuning dimulai...")
         grid_search.fit(X_train, y_train)
@@ -54,6 +66,9 @@ def main():
         mlflow.log_metric("recall", rec)
         mlflow.log_metric("f1_score", f1)
 
+        # ===============================
+        # 4. MODEL FISIK (UNTUK DOCKER)
+        # ===============================
         os.makedirs("random_forest_model", exist_ok=True)
         joblib.dump(best_model, "random_forest_model/model.pkl")
 
@@ -62,6 +77,9 @@ def main():
             artifact_path="random_forest_model"
         )
 
+        # ===============================
+        # 5. EXTRA ARTEFACTS
+        # ===============================
         with open("performance_report.txt", "w") as f:
             f.write(f"Accuracy: {acc}\n")
 
@@ -72,5 +90,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
