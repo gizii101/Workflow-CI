@@ -26,7 +26,7 @@ jobs:
           MLFLOW_TRACKING_USERNAME: ${{ secrets.MLFLOW_TRACKING_USERNAME }}
           MLFLOW_TRACKING_PASSWORD: ${{ secrets.MLFLOW_TRACKING_PASSWORD }}
         run: |
-          mlflow run MLProject --env-manager local
+          mlflow run ./MLProject --env-manager local
 
       - name: Upload MLflow Artifacts
         uses: actions/upload-artifact@v4
