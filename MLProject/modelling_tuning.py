@@ -1,4 +1,6 @@
 import pandas as pd
+import mlflow
+import mlflow.sklearn
 import json
 import os
 import joblib
@@ -9,6 +11,9 @@ from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_sc
 
 
 def main():
+
+    # ❗ JANGAN set_tracking_uri DI SINI
+    mlflow.set_experiment("Heart_Disease_Classification")
 
     df = pd.read_csv("heart_preprocessing.csv")
 
@@ -37,25 +42,37 @@ def main():
         verbose=1
     )
 
-    grid.fit(X_train, y_train)
+    with mlflow.start_run(run_name="RF_Tuning_SQLite"):
 
-    best_model = grid.best_estimator_
-    y_pred = best_model.predict(X_test)
+        grid.fit(X_train, y_train)
 
-    acc = accuracy_score(y_test, y_pred)
-    prec = precision_score(y_test, y_pred)
-    rec = recall_score(y_test, y_pred)
-    f1 = f1_score(y_test, y_pred)
+        best_model = grid.best_estimator_
+        y_pred = best_model.predict(X_test)
 
-    os.makedirs("random_forest_model", exist_ok=True)
-    joblib.dump(best_model, "random_forest_model/model.pkl")
+        acc = accuracy_score(y_test, y_pred)
+        prec = precision_score(y_test, y_pred)
+        rec = recall_score(y_test, y_pred)
+        f1 = f1_score(y_test, y_pred)
 
-    with open("performance_report.txt", "w") as f:
-        f.write(f"Accuracy: {acc}\nPrecision: {prec}\nRecall: {rec}\nF1: {f1}\n")
-        f.write(f"Best Params: {grid.best_params_}\n")
+        mlflow.log_params(grid.best_params_)
+        mlflow.log_metric("accuracy", acc)
+        mlflow.log_metric("precision", prec)
+        mlflow.log_metric("recall", rec)
+        mlflow.log_metric("f1_score", f1)
 
-    with open("best_config.json", "w") as f:
-        json.dump(grid.best_params_, f, indent=4)
+        # WAJIB: folder model statis
+        os.makedirs("random_forest_model", exist_ok=True)
+        joblib.dump(best_model, "random_forest_model/model.pkl")
+
+        mlflow.sklearn.log_model(
+            sk_model=best_model,
+            artifact_path="random_forest_model"
+        )
+
+        with open("performance_report.txt", "w") as f:
+            f.write(f"Accuracy: {acc}\nPrecision: {prec}\nRecall: {rec}\nF1: {f1}\n")
+
+        mlflow.log_artifact("performance_report.txt")
 
 
 if __name__ == "__main__":
