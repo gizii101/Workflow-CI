@@ -40,16 +40,18 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Build & Push Docker Image
+      - name: Build & Push Docker Image (tag-first)
         run: |
-          MODEL_PATH=$(ls -d MLProject/mlruns/*/*/artifacts/model | head -n 1)
+          IMAGE="${{ secrets.DOCKER_USERNAME }}/heart-disease-ci:latest"
 
+          # Build image langsung bertag
           mlflow models build-docker \
             -m "$MODEL_PATH" \
-            -n "${{ secrets.DOCKER_USERNAME }}/heart-disease-ci:latest" \
+            -n "$IMAGE" \
             --install-mlflow
 
-          docker push ${{ secrets.DOCKER_USERNAME }}/heart-disease-ci:latest
+          # Push tag (bukan hanya digest)
+          docker push "$IMAGE"
 
       - name: Force Tag latest (Docker Hub UI Fix)
         run: |
