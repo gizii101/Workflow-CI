@@ -31,39 +31,11 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Build & Push Docker Image (FINAL – CORRECT MODEL PATH)
+      - name: Build and Push Docker Image
         run: |
-          echo "Listing MLProject/mlruns:"
-          ls -R MLProject/mlruns
-
-          # Ambil EXPERIMENT_ID (selain folder 0)
-          EXP_ID=$(ls MLProject/mlruns | grep -v "^0$" | head -n 1)
-
-          # Ambil MODEL_ID
-          MODEL_ID=$(ls MLProject/mlruns/$EXP_ID/models | head -n 1)
-
-          # PENTING: masuk ke folder artifacts
-          MODEL_PATH="MLProject/mlruns/$EXP_ID/models/$MODEL_ID/artifacts"
-          IMAGE="${{ secrets.DOCKER_USERNAME }}/heart-disease-ci:latest"
-
-          echo "EXP_ID=$EXP_ID"
-          echo "MODEL_ID=$MODEL_ID"
-          echo "MODEL_PATH=$MODEL_PATH"
-          ls $MODEL_PATH
-
           mlflow models build-docker \
-            -m "$MODEL_PATH" \
-            -n "$IMAGE" \
+            -m "MLProject/random_forest_model" \
+            -n "${{ secrets.DOCKER_USERNAME }}/heart-disease-ci:latest" \
             --install-mlflow
 
-          docker push "$IMAGE"
-
-      - name: Push Versioned Tag (Docker Hub UI Trigger)
-        run: |
-          VERSION="${{ secrets.DOCKER_USERNAME }}/heart-disease-ci:${{ github.sha }}"
-
-          docker tag \
-            ${{ secrets.DOCKER_USERNAME }}/heart-disease-ci:latest \
-            "$VERSION"
-
-          docker push "$VERSION"
+          docker push ${{ secrets.DOCKER_USERNAME }}/heart-disease-ci:latest
