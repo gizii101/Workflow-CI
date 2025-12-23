@@ -11,7 +11,7 @@ def main():
     mlflow.set_tracking_uri("file:./mlruns")
     mlflow.set_experiment("CI_Heart_Disease_Training")
 
-    mlflow.sklearn.autolog()
+    mlflow.sklearn.autolog(log_models=False)
 
     df = pd.read_csv("heart_preprocessing.csv")
     X = df.drop(columns=["HeartDisease"])
@@ -28,10 +28,9 @@ def main():
 
     model.fit(X_train, y_train)
 
-    # 🔥 WAJIB ADA
     mlflow.sklearn.log_model(
         sk_model=model,
-        artifact_path="model"
+        artifact_path="random_forest_model"
     )
 
     y_pred = model.predict(X_test)
