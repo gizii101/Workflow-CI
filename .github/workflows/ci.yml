@@ -19,19 +19,15 @@ jobs:
 
       - name: Install Dependencies
         run: |
-          pip install mlflow pandas scikit-learn dagshub joblib
+          pip install mlflow pandas scikit-learn joblib
 
       - name: Run Model Training
-        env:
-          MLFLOW_TRACKING_USERNAME: ${{ secrets.MLFLOW_TRACKING_USERNAME }}
-          MLFLOW_TRACKING_PASSWORD: ${{ secrets.MLFLOW_TRACKING_PASSWORD }}
         run: |
           mlflow run MLProject --env-manager local
 
-      # ⬇️ SATU-SATUNYA TAMBAHAN PENTING (VALIDATOR)
       - name: Validate Model Output
         run: |
-          if [ ! -f MLProject/random_forest_model/model.pkl ]; then
+          if [ ! -f random_forest_model/model.pkl ]; then
             echo "❌ Model file not found!"
             exit 1
           fi
