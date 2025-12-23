@@ -42,20 +42,21 @@ jobs:
 
       - name: Build & Push Docker Image (STABLE)
         run: |
-          # 🔑 Ambil run TERBARU secara deterministik
-          MODEL_PATH="./MLProject/mlruns/0/$(ls -t MLProject/mlruns/0 | head -n 1)/artifacts/model"
+          # Ambil run_id
+          RUN_ID=$(ls -td MLProject/mlruns/0/*/ | head -n 1 | xargs basename)
 
+          MODEL_PATH="MLProject/mlruns/0/$RUN_ID/artifacts/model"
           IMAGE="${{ secrets.DOCKER_USERNAME }}/heart-disease-ci:latest"
 
-          # Build image dengan TAG
+          echo "Using model path: $MODEL_PATH"
+
           mlflow models build-docker \
             -m "$MODEL_PATH" \
             -n "$IMAGE" \
             --install-mlflow
 
-          # Push TAG
           docker push "$IMAGE"
-
+          
       - name: Push Versioned Tag (UI Trigger)
         run: |
           VERSION_TAG="${{ secrets.DOCKER_USERNAME }}/heart-disease-ci:${{ github.sha }}"
