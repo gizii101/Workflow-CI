@@ -11,7 +11,6 @@ def main():
     mlflow.set_tracking_uri("file:./mlruns")
     mlflow.set_experiment("CI_Heart_Disease_Training")
 
-    # Autolog cukup, JANGAN start_run
     mlflow.sklearn.autolog()
 
     df = pd.read_csv("heart_preprocessing.csv")
@@ -28,6 +27,12 @@ def main():
     )
 
     model.fit(X_train, y_train)
+
+    # 🔥 WAJIB ADA
+    mlflow.sklearn.log_model(
+        sk_model=model,
+        artifact_path="model"
+    )
 
     y_pred = model.predict(X_test)
     acc = accuracy_score(y_test, y_pred)
