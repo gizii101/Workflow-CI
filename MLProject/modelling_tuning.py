@@ -2,6 +2,8 @@ import pandas as pd
 import mlflow
 import mlflow.sklearn
 import json
+import os
+import joblib
 
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import GridSearchCV, train_test_split
@@ -19,7 +21,7 @@ def main():
     mlflow.set_experiment("Heart_Disease_Classification")
 
     # =========================================
-    # 2. LOAD PREPROCESSED DATASET
+    # 2. LOAD DATA
     # =========================================
     df = pd.read_csv("heart_preprocessing.csv")
 
@@ -27,20 +29,11 @@ def main():
     y = df["HeartDisease"]
 
     X_train, X_test, y_train, y_test = train_test_split(
-        X,
-        y,
-        test_size=0.2,
-        random_state=42,
-        stratify=y
+        X, y, test_size=0.2, random_state=42, stratify=y
     )
 
     # =========================================
-    # 3. AUTOLOG (MODEL DIMATIKAN)
-    # =========================================
-    mlflow.sklearn.autolog(log_models=False)
-
-    # =========================================
-    # 4. PARAMETER GRID
+    # 3. MODEL + GRID SEARCH
     # =========================================
     param_grid = {
         "n_estimators": [100, 200],
@@ -60,56 +53,69 @@ def main():
         verbose=1
     )
 
-    print("Training + Hyperparameter Tuning dimulai...")
-    grid_search.fit(X_train, y_train)
+    # =========================================
+    # 4. START RUN (WAJIB)
+    # =========================================
+    with mlflow.start_run(run_name="RF_HeartDisease_Tuning"):
 
-    best_model = grid_search.best_estimator_
-    y_pred = best_model.predict(X_test)
+        print("Training + Hyperparameter Tuning dimulai...")
+        grid_search.fit(X_train, y_train)
 
-    # =====================================
-    # 5. MANUAL METRICS
-    # =====================================
-    acc = accuracy_score(y_test, y_pred)
-    prec = precision_score(y_test, y_pred)
-    rec = recall_score(y_test, y_pred)
-    f1 = f1_score(y_test, y_pred)
+        best_model = grid_search.best_estimator_
+        y_pred = best_model.predict(X_test)
 
-    mlflow.log_params(grid_search.best_params_)
-    mlflow.log_metric("accuracy", acc)
-    mlflow.log_metric("precision", prec)
-    mlflow.log_metric("recall", rec)
-    mlflow.log_metric("f1_score", f1)
+        # =====================================
+        # 5. METRICS
+        # =====================================
+        acc = accuracy_score(y_test, y_pred)
+        prec = precision_score(y_test, y_pred)
+        rec = recall_score(y_test, y_pred)
+        f1 = f1_score(y_test, y_pred)
 
-    # =====================================
-    # 6. LOG MODEL (PENTING UNTUK DOCKER)
-    # =====================================
-    mlflow.sklearn.log_model(
-        sk_model=best_model,
-        artifact_path="random_forest_model"
-    )
+        mlflow.log_params(grid_search.best_params_)
+        mlflow.log_metric("accuracy", acc)
+        mlflow.log_metric("precision", prec)
+        mlflow.log_metric("recall", rec)
+        mlflow.log_metric("f1_score", f1)
 
-    # =====================================
-    # 7. EXTRA ARTEFACTS
-    # =====================================
-    with open("performance_report.txt", "w") as f:
-        f.write("=== Heart Disease Classification Report ===\n")
-        f.write(f"Accuracy  : {acc:.4f}\n")
-        f.write(f"Precision : {prec:.4f}\n")
-        f.write(f"Recall    : {rec:.4f}\n")
-        f.write(f"F1-Score  : {f1:.4f}\n")
-        f.write(f"Best Params: {grid_search.best_params_}\n")
+        # =====================================
+        # 6. SAVE MODEL KE FILESYSTEM (INI KUNCI CI)
+        # =====================================
+        os.makedirs("MLProject/random_forest_model", exist_ok=True)
 
-    mlflow.log_artifact("performance_report.txt")
+        joblib.dump(
+            best_model,
+            "MLProject/random_forest_model/model.pkl"
+        )
 
-    with open("best_config.json", "w") as f:
-        json.dump(grid_search.best_params_, f, indent=4)
+        # OPTIONAL: log ke MLflow (buat tracking aja)
+        mlflow.sklearn.log_model(
+            sk_model=best_model,
+            artifact_path="random_forest_model"
+        )
 
-    mlflow.log_artifact("best_config.json")
+        # =====================================
+        # 7. EXTRA ARTIFACTS
+        # =====================================
+        with open("performance_report.txt", "w") as f:
+            f.write("=== Heart Disease Classification Report ===\n")
+            f.write(f"Accuracy  : {acc:.4f}\n")
+            f.write(f"Precision : {prec:.4f}\n")
+            f.write(f"Recall    : {rec:.4f}\n")
+            f.write(f"F1-Score  : {f1:.4f}\n")
+            f.write(f"Best Params: {grid_search.best_params_}\n")
 
-    print("-" * 40)
-    print("TRAINING & LOGGING SELESAI (DAGSHUB)")
-    print(f"Accuracy: {acc:.4f}")
-    print("-" * 40)
+        mlflow.log_artifact("performance_report.txt")
+
+        with open("best_config.json", "w") as f:
+            json.dump(grid_search.best_params_, f, indent=4)
+
+        mlflow.log_artifact("best_config.json")
+
+        print("-" * 40)
+        print("TRAINING & LOGGING SELESAI")
+        print(f"Accuracy: {acc:.4f}")
+        print("-" * 40)
 
 
 if __name__ == "__main__":
