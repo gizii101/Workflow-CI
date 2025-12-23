@@ -27,7 +27,7 @@ jobs:
 
       - name: Validate Model Output
         run: |
-          if [ ! -f MLProject/random_forest_model/model.pkl ]; then
+          if [ ! -f random_forest_model/model.pkl ]; then
             echo "❌ Model file not found!"
             exit 1
           fi
@@ -42,7 +42,7 @@ jobs:
       - name: Build and Push Docker Image
         run: |
           mlflow models build-docker \
-            -m MLProject/random_forest_model \
+            -m random_forest_model \
             -n "${{ secrets.DOCKER_USERNAME }}/heart-disease-ci:latest" \
             --install-mlflow
 
