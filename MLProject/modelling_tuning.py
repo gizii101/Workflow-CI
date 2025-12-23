@@ -15,9 +15,7 @@ def main():
     # =========================================
     # 1. DAGSHUB + MLFLOW CONFIG
     # =========================================
-    mlflow.set_tracking_uri(
-        "https://dagshub.com/m004d5y1199/Heart-Disease-Classification-Analysis.mlflow"
-    )
+    mlflow.set_tracking_uri("file:./mlruns")
     mlflow.set_experiment("Heart_Disease_Classification")
 
     # =========================================
@@ -108,3 +106,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
