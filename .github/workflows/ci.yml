@@ -31,18 +31,22 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Build & Push Docker Image
+      - name: Build & Push Docker Image (FINAL FIX – MODEL REGISTRY)
         run: |
           echo "Listing MLProject/mlruns:"
           ls -R MLProject/mlruns
 
-          # Ambil RUN_ID terbaru
-          RUN_ID=$(ls -td MLProject/mlruns/0/*/ | head -n 1 | xargs basename)
+          # Ambil EXPERIMENT_ID (selain folder '0')
+          EXP_ID=$(ls MLProject/mlruns | grep -v "^0$" | head -n 1)
 
-          MODEL_PATH="MLProject/mlruns/0/$RUN_ID/artifacts/model"
+          # Ambil MODEL_ID terbaru
+          MODEL_ID=$(ls MLProject/mlruns/$EXP_ID/models | head -n 1)
+
+          MODEL_PATH="MLProject/mlruns/$EXP_ID/models/$MODEL_ID"
           IMAGE="${{ secrets.DOCKER_USERNAME }}/heart-disease-ci:latest"
 
-          echo "RUN_ID=$RUN_ID"
+          echo "EXP_ID=$EXP_ID"
+          echo "MODEL_ID=$MODEL_ID"
           echo "MODEL_PATH=$MODEL_PATH"
 
           mlflow models build-docker \
@@ -51,8 +55,8 @@ jobs:
             --install-mlflow
 
           docker push "$IMAGE"
-
-      - name: Push Versioned Tag (Docker Hub UI FIX)
+          
+      - name: Push Versioned Tag (UI Trigger)
         run: |
           VERSION="${{ secrets.DOCKER_USERNAME }}/heart-disease-ci:${{ github.sha }}"
 
