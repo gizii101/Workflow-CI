@@ -50,3 +50,11 @@ jobs:
             --install-mlflow
 
           docker push ${{ secrets.DOCKER_USERNAME }}/heart-disease-ci:latest
+
+      - name: Force Tag latest (Docker Hub UI Fix)
+        run: |
+          docker tag \
+            ${{ secrets.DOCKER_USERNAME }}/heart-disease-ci:latest \
+            ${{ secrets.DOCKER_USERNAME }}/heart-disease-ci:latest
+
+          docker push ${{ secrets.DOCKER_USERNAME }}/heart-disease-ci:latest
