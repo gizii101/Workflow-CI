@@ -33,7 +33,7 @@ def main():
     )
 
     # =========================================
-    # 3. MODEL + GRID SEARCH
+    # 3. GRID SEARCH
     # =========================================
     param_grid = {
         "n_estimators": [100, 200],
@@ -45,77 +45,65 @@ def main():
     rf = RandomForestClassifier(random_state=42)
 
     grid_search = GridSearchCV(
-        estimator=rf,
-        param_grid=param_grid,
+        rf,
+        param_grid,
         cv=5,
         scoring="accuracy",
         n_jobs=-1,
         verbose=1
     )
 
-    # =========================================
-    # 4. START RUN (WAJIB)
-    # =========================================
-    with mlflow.start_run(run_name="RF_HeartDisease_Tuning"):
+    print("Training + Hyperparameter Tuning dimulai...")
+    grid_search.fit(X_train, y_train)
 
-        print("Training + Hyperparameter Tuning dimulai...")
-        grid_search.fit(X_train, y_train)
+    best_model = grid_search.best_estimator_
+    y_pred = best_model.predict(X_test)
 
-        best_model = grid_search.best_estimator_
-        y_pred = best_model.predict(X_test)
+    # =====================================
+    # 4. METRICS
+    # =====================================
+    acc = accuracy_score(y_test, y_pred)
+    prec = precision_score(y_test, y_pred)
+    rec = recall_score(y_test, y_pred)
+    f1 = f1_score(y_test, y_pred)
 
-        # =====================================
-        # 5. METRICS
-        # =====================================
-        acc = accuracy_score(y_test, y_pred)
-        prec = precision_score(y_test, y_pred)
-        rec = recall_score(y_test, y_pred)
-        f1 = f1_score(y_test, y_pred)
+    mlflow.log_params(grid_search.best_params_)
+    mlflow.log_metric("accuracy", acc)
+    mlflow.log_metric("precision", prec)
+    mlflow.log_metric("recall", rec)
+    mlflow.log_metric("f1_score", f1)
 
-        mlflow.log_params(grid_search.best_params_)
-        mlflow.log_metric("accuracy", acc)
-        mlflow.log_metric("precision", prec)
-        mlflow.log_metric("recall", rec)
-        mlflow.log_metric("f1_score", f1)
+    # =====================================
+    # 5. SAVE MODEL KE FILESYSTEM (WAJIB)
+    # =====================================
+    os.makedirs("random_forest_model", exist_ok=True)
+    joblib.dump(best_model, "random_forest_model/model.pkl")
 
-        # =====================================
-        # 6. SAVE MODEL KE FILESYSTEM (INI KUNCI CI)
-        # =====================================
-        os.makedirs("MLProject/random_forest_model", exist_ok=True)
+    # OPTIONAL: log ke MLflow (tracking saja)
+    mlflow.sklearn.log_model(
+        sk_model=best_model,
+        artifact_path="random_forest_model"
+    )
 
-        joblib.dump(
-            best_model,
-            "MLProject/random_forest_model/model.pkl"
-        )
+    # =====================================
+    # 6. EXTRA ARTIFACTS
+    # =====================================
+    with open("performance_report.txt", "w") as f:
+        f.write("=== Heart Disease Classification Report ===\n")
+        f.write(f"Accuracy  : {acc:.4f}\n")
+        f.write(f"Precision : {prec:.4f}\n")
+        f.write(f"Recall    : {rec:.4f}\n")
+        f.write(f"F1-Score  : {f1:.4f}\n")
+        f.write(f"Best Params: {grid_search.best_params_}\n")
 
-        # OPTIONAL: log ke MLflow (buat tracking aja)
-        mlflow.sklearn.log_model(
-            sk_model=best_model,
-            artifact_path="random_forest_model"
-        )
+    mlflow.log_artifact("performance_report.txt")
 
-        # =====================================
-        # 7. EXTRA ARTIFACTS
-        # =====================================
-        with open("performance_report.txt", "w") as f:
-            f.write("=== Heart Disease Classification Report ===\n")
-            f.write(f"Accuracy  : {acc:.4f}\n")
-            f.write(f"Precision : {prec:.4f}\n")
-            f.write(f"Recall    : {rec:.4f}\n")
-            f.write(f"F1-Score  : {f1:.4f}\n")
-            f.write(f"Best Params: {grid_search.best_params_}\n")
+    with open("best_config.json", "w") as f:
+        json.dump(grid_search.best_params_, f, indent=4)
 
-        mlflow.log_artifact("performance_report.txt")
+    mlflow.log_artifact("best_config.json")
 
-        with open("best_config.json", "w") as f:
-            json.dump(grid_search.best_params_, f, indent=4)
-
-        mlflow.log_artifact("best_config.json")
-
-        print("-" * 40)
-        print("TRAINING & LOGGING SELESAI")
-        print(f"Accuracy: {acc:.4f}")
-        print("-" * 40)
+    print("SELESAI. Accuracy:", acc)
 
 
 if __name__ == "__main__":
