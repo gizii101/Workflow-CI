@@ -21,9 +21,7 @@ def main():
     # =========================================
     # 2. LOAD PREPROCESSED DATASET
     # =========================================
-    data_path = "heart_preprocessing.csv"
-
-    df = pd.read_csv(data_path)
+    df = pd.read_csv("heart_preprocessing.csv")
 
     X = df.drop(columns=["HeartDisease"])
     y = df["HeartDisease"]
@@ -62,61 +60,56 @@ def main():
         verbose=1
     )
 
-    # =========================================
-    # 5. START RUN
-    # =========================================
-    with mlflow.start_run(run_name="RF_HeartDisease_Tuning"):
+    print("Training + Hyperparameter Tuning dimulai...")
+    grid_search.fit(X_train, y_train)
 
-        print("Training + Hyperparameter Tuning dimulai...")
-        grid_search.fit(X_train, y_train)
+    best_model = grid_search.best_estimator_
+    y_pred = best_model.predict(X_test)
 
-        best_model = grid_search.best_estimator_
-        y_pred = best_model.predict(X_test)
+    # =====================================
+    # 5. MANUAL METRICS
+    # =====================================
+    acc = accuracy_score(y_test, y_pred)
+    prec = precision_score(y_test, y_pred)
+    rec = recall_score(y_test, y_pred)
+    f1 = f1_score(y_test, y_pred)
 
-        # =====================================
-        # 6. MANUAL METRICS
-        # =====================================
-        acc = accuracy_score(y_test, y_pred)
-        prec = precision_score(y_test, y_pred)
-        rec = recall_score(y_test, y_pred)
-        f1 = f1_score(y_test, y_pred)
+    mlflow.log_params(grid_search.best_params_)
+    mlflow.log_metric("accuracy", acc)
+    mlflow.log_metric("precision", prec)
+    mlflow.log_metric("recall", rec)
+    mlflow.log_metric("f1_score", f1)
 
-        mlflow.log_params(grid_search.best_params_)
-        mlflow.log_metric("accuracy", acc)
-        mlflow.log_metric("precision", prec)
-        mlflow.log_metric("recall", rec)
-        mlflow.log_metric("f1_score", f1)
+    # =====================================
+    # 6. LOG MODEL (PENTING UNTUK DOCKER)
+    # =====================================
+    mlflow.sklearn.log_model(
+        sk_model=best_model,
+        artifact_path="random_forest_model"
+    )
 
-        # =====================================
-        # 7. LOG MODEL (MLmodel, model.pkl, dll)
-        # =====================================
-        mlflow.sklearn.log_model(
-            sk_model=best_model,
-            artifact_path="random_forest_model"
-        )
+    # =====================================
+    # 7. EXTRA ARTEFACTS
+    # =====================================
+    with open("performance_report.txt", "w") as f:
+        f.write("=== Heart Disease Classification Report ===\n")
+        f.write(f"Accuracy  : {acc:.4f}\n")
+        f.write(f"Precision : {prec:.4f}\n")
+        f.write(f"Recall    : {rec:.4f}\n")
+        f.write(f"F1-Score  : {f1:.4f}\n")
+        f.write(f"Best Params: {grid_search.best_params_}\n")
 
-        # =====================================
-        # 8. EXTRA ARTEFACTS
-        # =====================================
-        with open("performance_report.txt", "w") as f:
-            f.write("=== Heart Disease Classification Report ===\n")
-            f.write(f"Accuracy  : {acc:.4f}\n")
-            f.write(f"Precision : {prec:.4f}\n")
-            f.write(f"Recall    : {rec:.4f}\n")
-            f.write(f"F1-Score  : {f1:.4f}\n")
-            f.write(f"Best Params: {grid_search.best_params_}\n")
+    mlflow.log_artifact("performance_report.txt")
 
-        mlflow.log_artifact("performance_report.txt")
+    with open("best_config.json", "w") as f:
+        json.dump(grid_search.best_params_, f, indent=4)
 
-        with open("best_config.json", "w") as f:
-            json.dump(grid_search.best_params_, f, indent=4)
+    mlflow.log_artifact("best_config.json")
 
-        mlflow.log_artifact("best_config.json")
-
-        print("-" * 40)
-        print("TRAINING & LOGGING SELESAI (DAGSHUB)")
-        print(f"Accuracy: {acc:.4f}")
-        print("-" * 40)
+    print("-" * 40)
+    print("TRAINING & LOGGING SELESAI (DAGSHUB)")
+    print(f"Accuracy: {acc:.4f}")
+    print("-" * 40)
 
 
 if __name__ == "__main__":
