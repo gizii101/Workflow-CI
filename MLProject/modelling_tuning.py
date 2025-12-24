@@ -11,11 +11,14 @@ from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_sc
 
 
 def main():
-    # ❗ JANGAN set tracking_uri di sini
-    # ❗ JANGAN start_run()
-
+    # =================================================
+    # MLflow config
+    # =================================================
     mlflow.set_experiment("Heart_Disease_Classification")
 
+    # =================================================
+    # Load data (file ada di folder MLProject)
+    # =================================================
     df = pd.read_csv("heart_preprocessing.csv")
 
     X = df.drop(columns=["HeartDisease"])
@@ -25,6 +28,9 @@ def main():
         X, y, test_size=0.2, random_state=42, stratify=y
     )
 
+    # =================================================
+    # Grid Search
+    # =================================================
     param_grid = {
         "n_estimators": [100, 200],
         "max_depth": [None, 10, 20],
@@ -32,8 +38,10 @@ def main():
         "criterion": ["gini", "entropy"]
     }
 
+    model = RandomForestClassifier(random_state=42)
+
     grid = GridSearchCV(
-        RandomForestClassifier(random_state=42),
+        model,
         param_grid,
         cv=5,
         scoring="accuracy",
@@ -46,19 +54,23 @@ def main():
     best_model = grid.best_estimator_
     y_pred = best_model.predict(X_test)
 
+    # =================================================
+    # Metrics
+    # =================================================
     acc = accuracy_score(y_test, y_pred)
     prec = precision_score(y_test, y_pred)
     rec = recall_score(y_test, y_pred)
     f1 = f1_score(y_test, y_pred)
 
     mlflow.log_params(grid.best_params_)
-    mlflow.log_metrics({
-        "accuracy": acc,
-        "precision": prec,
-        "recall": rec,
-        "f1_score": f1
-    })
+    mlflow.log_metric("accuracy", acc)
+    mlflow.log_metric("precision", prec)
+    mlflow.log_metric("recall", rec)
+    mlflow.log_metric("f1_score", f1)
 
+    # =================================================
+    # Save model (INI YANG DIPAKAI DOCKER)
+    # =================================================
     os.makedirs("random_forest_model", exist_ok=True)
     joblib.dump(best_model, "random_forest_model/model.pkl")
 
@@ -67,10 +79,23 @@ def main():
         artifact_path="random_forest_model"
     )
 
+    # =================================================
+    # Extra artifacts
+    # =================================================
     with open("performance_report.txt", "w") as f:
-        f.write(f"Accuracy: {acc}\n")
+        f.write(f"Accuracy : {acc:.4f}\n")
+        f.write(f"Precision: {prec:.4f}\n")
+        f.write(f"Recall   : {rec:.4f}\n")
+        f.write(f"F1-score : {f1:.4f}\n")
 
     mlflow.log_artifact("performance_report.txt")
+
+    with open("best_config.json", "w") as f:
+        json.dump(grid.best_params_, f, indent=4)
+
+    mlflow.log_artifact("best_config.json")
+
+    print("Training selesai. Accuracy:", acc)
 
 
 if __name__ == "__main__":
