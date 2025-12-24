@@ -27,7 +27,7 @@ jobs:
 
       - name: Validate Model Folder
         run: |
-          if [ ! -f model/model.pkl ]; then
+          if [ ! -f MLProject/model/model.pkl ]; then
             echo "❌ Model file not found"
             exit 1
           fi
@@ -42,7 +42,7 @@ jobs:
       - name: Build and Push Docker Image
         run: |
           mlflow models build-docker \
-            -m model \
+            -m MLProject/model \
             -n "${{ secrets.DOCKER_USERNAME }}/heart-disease-ci:latest" \
             --install-mlflow
 
