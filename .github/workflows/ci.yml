@@ -9,13 +9,15 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout Code
+        uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v5
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
           python-version: "3.10"
 
-      - name: Install dependencies
+      - name: Install Dependencies
         run: |
           pip install mlflow pandas scikit-learn joblib
 
@@ -23,6 +25,14 @@ jobs:
         run: |
           export MLFLOW_TRACKING_URI=sqlite:///mlflow.db
           mlflow run MLProject --env-manager local
+
+      - name: Validate Model Output
+        run: |
+          if [ ! -f MLProject/random_forest_model/model.pkl ]; then
+            echo "❌ Model file not found"
+            exit 1
+          fi
+          echo "✅ Model file exists"
 
       - name: Login to Docker Hub
         uses: docker/login-action@v3
@@ -33,7 +43,7 @@ jobs:
       - name: Build & Push Docker Image
         run: |
           mlflow models build-docker \
-            -m random_forest_model \
+            -m MLProject/random_forest_model \
             -n "${{ secrets.DOCKER_USERNAME }}/heart-disease-ci:latest" \
             --install-mlflow
 
