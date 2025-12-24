@@ -21,7 +21,7 @@ jobs:
         run: |
           pip install mlflow pandas scikit-learn joblib
 
-      - name: Run MLflow Project (Training)
+      - name: Run MLflow Project
         run: |
           export MLFLOW_TRACKING_URI=sqlite:///mlflow.db
           mlflow run MLProject --env-manager local
