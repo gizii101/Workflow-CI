@@ -11,10 +11,15 @@ from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_sc
 
 
 def main():
-    # =================================================
-    # mlflow run AKAN handle lifecycle run
-    # =================================================
+    # ❌ JANGAN set_tracking_uri DI SINI
+    # ❌ JANGAN start_run()
+    # mlflow run SUDAH NGURUS SEMUANYA
 
+    mlflow.set_experiment("Heart_Disease_Classification")
+
+    # =========================
+    # Load data (ADA DI MLProject)
+    # =========================
     df = pd.read_csv("heart_preprocessing.csv")
 
     X = df.drop(columns=["HeartDisease"])
@@ -24,6 +29,9 @@ def main():
         X, y, test_size=0.2, random_state=42, stratify=y
     )
 
+    # =========================
+    # Grid Search
+    # =========================
     param_grid = {
         "n_estimators": [100, 200],
         "max_depth": [None, 10, 20],
@@ -47,6 +55,9 @@ def main():
     best_model = grid.best_estimator_
     y_pred = best_model.predict(X_test)
 
+    # =========================
+    # Metrics
+    # =========================
     acc = accuracy_score(y_test, y_pred)
     prec = precision_score(y_test, y_pred)
     rec = recall_score(y_test, y_pred)
@@ -58,9 +69,9 @@ def main():
     mlflow.log_metric("recall", rec)
     mlflow.log_metric("f1_score", f1)
 
-    # =================================================
-    # Save model (dipakai Docker)
-    # =================================================
+    # =========================
+    # SAVE MODEL (UNTUK DOCKER)
+    # =========================
     os.makedirs("random_forest_model", exist_ok=True)
     joblib.dump(best_model, "random_forest_model/model.pkl")
 
@@ -69,9 +80,9 @@ def main():
         artifact_path="random_forest_model"
     )
 
-    # =================================================
+    # =========================
     # Extra artifacts
-    # =================================================
+    # =========================
     with open("performance_report.txt", "w") as f:
         f.write(f"Accuracy : {acc:.4f}\n")
         f.write(f"Precision: {prec:.4f}\n")
