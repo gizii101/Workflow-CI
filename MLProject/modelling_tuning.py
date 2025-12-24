@@ -11,6 +11,10 @@ from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_sc
 
 
 def main():
+    # ❗ JANGAN set tracking_uri di sini
+    # ❗ JANGAN start_run()
+
+    mlflow.set_experiment("Heart_Disease_Classification")
 
     df = pd.read_csv("heart_preprocessing.csv")
 
@@ -28,10 +32,8 @@ def main():
         "criterion": ["gini", "entropy"]
     }
 
-    rf = RandomForestClassifier(random_state=42)
-
     grid = GridSearchCV(
-        rf,
+        RandomForestClassifier(random_state=42),
         param_grid,
         cv=5,
         scoring="accuracy",
@@ -39,7 +41,6 @@ def main():
         verbose=1
     )
 
-    print("Training dimulai...")
     grid.fit(X_train, y_train)
 
     best_model = grid.best_estimator_
@@ -50,22 +51,26 @@ def main():
     rec = recall_score(y_test, y_pred)
     f1 = f1_score(y_test, y_pred)
 
-    # 🔥 INI AMAN karena run SUDAH ADA
     mlflow.log_params(grid.best_params_)
-    mlflow.log_metric("accuracy", acc)
-    mlflow.log_metric("precision", prec)
-    mlflow.log_metric("recall", rec)
-    mlflow.log_metric("f1_score", f1)
+    mlflow.log_metrics({
+        "accuracy": acc,
+        "precision": prec,
+        "recall": rec,
+        "f1_score": f1
+    })
 
     os.makedirs("random_forest_model", exist_ok=True)
     joblib.dump(best_model, "random_forest_model/model.pkl")
 
     mlflow.sklearn.log_model(
-        sk_model=best_model,
+        best_model,
         artifact_path="random_forest_model"
     )
 
-    print("SELESAI. Accuracy:", acc)
+    with open("performance_report.txt", "w") as f:
+        f.write(f"Accuracy: {acc}\n")
+
+    mlflow.log_artifact("performance_report.txt")
 
 
 if __name__ == "__main__":
