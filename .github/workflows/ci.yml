@@ -36,10 +36,10 @@ jobs:
           # ambil experiment id (selain 0)
           EXP_ID=$(ls MLProject/mlruns | grep -v "^0$" | head -n 1)
 
-          # ambil run id terbaru
-          RUN_ID=$(ls MLProject/mlruns/$EXP_ID | grep -v "meta.yaml" | head -n 1)
+          # ambil MODEL ID dari folder models (INI YANG BENAR)
+          MODEL_ID=$(ls MLProject/mlruns/$EXP_ID/models | head -n 1)
 
-          MODEL_PATH="MLProject/mlruns/$EXP_ID/$RUN_ID/artifacts/random_forest_model"
+          MODEL_PATH="MLProject/mlruns/$EXP_ID/models/$MODEL_ID"
 
           echo "Building Docker from: $MODEL_PATH"
 
