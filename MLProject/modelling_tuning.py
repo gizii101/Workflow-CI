@@ -28,10 +28,10 @@ def main():
         "criterion": ["gini", "entropy"]
     }
 
-    model = RandomForestClassifier(random_state=42)
+    rf = RandomForestClassifier(random_state=42)
 
     grid = GridSearchCV(
-        model,
+        rf,
         param_grid,
         cv=5,
         scoring="accuracy",
@@ -39,6 +39,7 @@ def main():
         verbose=1
     )
 
+    print("Training dimulai...")
     grid.fit(X_train, y_train)
 
     best_model = grid.best_estimator_
@@ -49,13 +50,13 @@ def main():
     rec = recall_score(y_test, y_pred)
     f1 = f1_score(y_test, y_pred)
 
+    # 🔥 INI AMAN karena run SUDAH ADA
     mlflow.log_params(grid.best_params_)
     mlflow.log_metric("accuracy", acc)
     mlflow.log_metric("precision", prec)
     mlflow.log_metric("recall", rec)
     mlflow.log_metric("f1_score", f1)
 
-    # ⬇️ INI PENTING BUAT DOCKER
     os.makedirs("random_forest_model", exist_ok=True)
     joblib.dump(best_model, "random_forest_model/model.pkl")
 
@@ -64,12 +65,7 @@ def main():
         artifact_path="random_forest_model"
     )
 
-    with open("performance_report.txt", "w") as f:
-        f.write(f"Accuracy: {acc}\n")
-
-    mlflow.log_artifact("performance_report.txt")
-
-    print("TRAINING SELESAI")
+    print("SELESAI. Accuracy:", acc)
 
 
 if __name__ == "__main__":
