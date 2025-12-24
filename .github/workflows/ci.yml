@@ -33,13 +33,10 @@ jobs:
 
       - name: Build & Push Docker Image
         run: |
-          # ambil experiment id (selain 0)
           EXP_ID=$(ls MLProject/mlruns | grep -v "^0$" | head -n 1)
-
-          # ambil MODEL ID dari folder models (INI YANG BENAR)
           MODEL_ID=$(ls MLProject/mlruns/$EXP_ID/models | head -n 1)
 
-          MODEL_PATH="MLProject/mlruns/$EXP_ID/models/$MODEL_ID"
+          MODEL_PATH="MLProject/mlruns/$EXP_ID/models/$MODEL_ID/artifacts"
 
           echo "Building Docker from: $MODEL_PATH"
 
